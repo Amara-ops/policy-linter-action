@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create sample policy
+        run: |
+          cat > sample.policy.json << 'JSON'
+          {
+            "meta": { "denomination": "BASE_USDC", "logging": true },
+            "caps": { "max_outflow_h1": 50, "max_outflow_d1": 200, "call_rate_cap": "60/hour", "anomaly_block": { "enabled": true } },
+            "calls": { "allowlist": [[8453, "0x833589fCD6edB6E08f4c7c32D4f71B54B5DCaB2D", "0xa9059cbb"]] },
+            "approvals": { "quorum": 2, "timelock_hours": 24 },
+            "controls": { "pause": { "enabled": true } }
+          }
+          JSON
+      - name: Run action
+        uses: ./. 
+        with:
+          policy: sample.policy.json
+          report: report.json
+          strict: 'false'
+          version: v0.1.0
+      - name: Assert report exists
+        run: test -f report.json && cat report.json
