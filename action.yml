@@ -31,17 +31,24 @@ runs:
       run: |
         set -euo pipefail
         mkdir -p .linter
-        base_url="https://raw.githubusercontent.com/Amara-ops/agent-guardrails-policy-linter/${{ inputs.version }}/dist"
+        base_url="https://raw.githubusercontent.com/Amara-ops/agent-guardrails-policy-linter/${{ inputs.version }}"
+        # Download compiled JS
         for f in cli.js rules.js schema.js; do
-          echo "::group::Download $f"
-          curl -sSfL -o ".linter/$f" "$base_url/$f"
+          echo "::group::Download dist/$f"
+          curl -sSfL -o ".linter/$f" "$base_url/dist/$f"
           echo "::endgroup::"
         done
-    - name: Install runtime deps (Ajv)
+        # Download JSON schema expected by schema.js (required at ../schema.json)
+        echo "::group::Download schema.json"
+        curl -sSfL -o "schema.json" "$base_url/schema.json"
+        echo "::endgroup::"
+    - name: Install runtime deps (Ajv) and set ESM type
       shell: bash
       run: |
         set -euo pipefail
         npm --prefix .linter init -y >/dev/null 2>&1
+        # Silence ESM warning and align with our ESM build
+        node -e 'let p=require("./.linter/package.json"); p.type="module"; require("fs").writeFileSync("./.linter/package.json", JSON.stringify(p,null,2));'
         npm --prefix .linter i ajv@8
     - name: Run linter
       shell: bash
