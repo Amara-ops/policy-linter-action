@@ -37,6 +37,12 @@ runs:
           curl -sSfL -o ".linter/$f" "$base_url/$f"
           echo "::endgroup::"
         done
+    - name: Install runtime deps (Ajv)
+      shell: bash
+      run: |
+        set -euo pipefail
+        npm --prefix .linter init -y >/dev/null 2>&1
+        npm --prefix .linter i ajv@8
     - name: Run linter
       shell: bash
       run: |
