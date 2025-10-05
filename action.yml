@@ -1,0 +1,46 @@
+name: Agent Treasury Policy Linter
+description: Fails CI when agent-treasury policy guardrails are missing (allowlists, caps, timelock/quorum, pause/logging).
+author: Amara-ops
+branding:
+  icon: shield
+  color: blue
+inputs:
+  policy:
+    description: Path to policy JSON
+    required: true
+  report:
+    description: Path to write JSON report
+    required: false
+    default: policy.report.json
+  strict:
+    description: Treat warnings as errors
+    required: false
+    default: 'false'
+  version:
+    description: Linter ref (tag or branch) in main repo (Amara-ops/agent-guardrails-policy-linter)
+    required: false
+    default: main
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    - name: Fetch linter dist from main repo
+      shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p .linter
+        base_url="https://raw.githubusercontent.com/Amara-ops/agent-guardrails-policy-linter/${{ inputs.version }}/dist"
+        for f in cli.js rules.js schema.js; do
+          echo "::group::Download $f"
+          curl -sSfL -o ".linter/$f" "$base_url/$f"
+          echo "::endgroup::"
+        done
+    - name: Run linter
+      shell: bash
+      run: |
+        set -euo pipefail
+        STRICT_FLAG=""
+        if [ "${{ inputs.strict }}" = "true" ]; then STRICT_FLAG="--strict"; fi
+        node .linter/cli.js "${{ inputs.policy }}" --report "${{ inputs.report }}" $STRICT_FLAG
