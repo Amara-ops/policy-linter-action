@@ -46,9 +46,14 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        npm --prefix .linter init -y >/dev/null 2>&1
-        # Silence ESM warning and align with our ESM build
-        node -e 'let p=require("./.linter/package.json"); p.type="module"; require("fs").writeFileSync("./.linter/package.json", JSON.stringify(p,null,2));'
+        mkdir -p .linter
+        cat > .linter/package.json <<'JSON'
+        {
+          "name": "policy-linter-action-runtime",
+          "private": true,
+          "type": "module"
+        }
+        JSON
         npm --prefix .linter i ajv@8
     - name: Run linter
       shell: bash
