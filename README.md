@@ -1,4 +1,4 @@
-# Agent Treasury Policy Linter — GitHub Action
+## Agent Treasury Policy Linter — GitHub Action
 
 One-line CI gate for agent-treasury safety. Fails your workflow if guardrails are missing:
 - selector+chainId allowlists
