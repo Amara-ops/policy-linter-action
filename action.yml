@@ -32,24 +32,27 @@ runs:
     - uses: actions/setup-node@v4
       with:
         node-version: '20'
-
     - name: Fetch linter dist from main repo
       shell: bash
       run: |
         set -euo pipefail
         mkdir -p .linter
         base_url="https://raw.githubusercontent.com/Amara-ops/agent-guardrails-policy-linter/${{ inputs.version }}"
-        # Download compiled JS
-        for f in cli.js rules.js schema.js sarif.js; do
+        # Download compiled JS (core files)
+        for f in cli.js rules.js schema.js; do
           echo "::group::Download dist/$f"
           curl -sSfL -o ".linter/$f" "$base_url/dist/$f"
           echo "::endgroup::"
         done
+        # Best-effort download of SARIF module (present in newer versions).
+        # Do not fail if missing (older tags like v0.1.0).
+        echo "::group::Download dist/sarif.js (best-effort)"
+        curl -sSL -o ".linter/sarif.js" "$base_url/dist/sarif.js" || true
+        echo "::endgroup::"
         # Download JSON schema expected by schema.js at ../schema.json
         echo "::group::Download schema.json"
         curl -sSfL -o "schema.json" "$base_url/schema.json"
         echo "::endgroup::"
-
     - name: Install runtime deps (Ajv) and set ESM type
       shell: bash
       run: |
@@ -63,7 +66,6 @@ runs:
         }
         JSON
         npm --prefix .linter i ajv@8
-
     - name: Run linter
       shell: bash
       run: |
