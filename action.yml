@@ -20,12 +20,19 @@ inputs:
     description: Linter ref (tag or branch) in main repo (Amara-ops/agent-guardrails-policy-linter)
     required: false
     default: main
+  sarif:
+    description: Optional path to write SARIF output (for GitHub Code Scanning)
+    required: false
+  artifact:
+    description: Optional artifact path to anchor SARIF findings (defaults to policy path)
+    required: false
 runs:
   using: composite
   steps:
     - uses: actions/setup-node@v4
       with:
         node-version: '20'
+
     - name: Fetch linter dist from main repo
       shell: bash
       run: |
@@ -33,15 +40,16 @@ runs:
         mkdir -p .linter
         base_url="https://raw.githubusercontent.com/Amara-ops/agent-guardrails-policy-linter/${{ inputs.version }}"
         # Download compiled JS
-        for f in cli.js rules.js schema.js; do
+        for f in cli.js rules.js schema.js sarif.js; do
           echo "::group::Download dist/$f"
           curl -sSfL -o ".linter/$f" "$base_url/dist/$f"
           echo "::endgroup::"
         done
-        # Download JSON schema expected by schema.js (required at ../schema.json)
+        # Download JSON schema expected by schema.js at ../schema.json
         echo "::group::Download schema.json"
         curl -sSfL -o "schema.json" "$base_url/schema.json"
         echo "::endgroup::"
+
     - name: Install runtime deps (Ajv) and set ESM type
       shell: bash
       run: |
@@ -55,10 +63,18 @@ runs:
         }
         JSON
         npm --prefix .linter i ajv@8
+
     - name: Run linter
       shell: bash
       run: |
         set -euo pipefail
         STRICT_FLAG=""
         if [ "${{ inputs.strict }}" = "true" ]; then STRICT_FLAG="--strict"; fi
-        node .linter/cli.js "${{ inputs.policy }}" --report "${{ inputs.report }}" $STRICT_FLAG
+        SARIF_ARGS=""
+        if [ -n "${{ inputs.sarif }}" ]; then
+          SARIF_ARGS="--sarif \"${{ inputs.sarif }}\""
+          if [ -n "${{ inputs.artifact }}" ]; then
+            SARIF_ARGS="$SARIF_ARGS --artifact \"${{ inputs.artifact }}\""
+          fi
+        fi
+        eval node .linter/cli.js "${{ inputs.policy }}" --report "${{ inputs.report }}" $STRICT_FLAG $SARIF_ARGS
