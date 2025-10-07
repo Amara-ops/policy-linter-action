@@ -31,10 +31,50 @@ jobs:
 - report (optional): path to write JSON report (default: policy.report.json)
 - strict (optional): 'true' to fail on warnings (default: 'false')
 - version (optional): linter ref in main repo (default: main)
+- sarif (optional): path to write SARIF output
+- artifact (optional): repo-relative path to anchor SARIF findings (defaults to policy path)
 
-## Notes
-- Some sample policies in the main repo intentionally emit educational warnings (e.g., anomaly block off, low timelock, missing slippage). In non-strict mode, these still pass; in `--strict`, they fail.
-- Pin `version` to a tag (e.g., v0.1.0) for reproducible builds.
+## GitHub Code Scanning (SARIF)
+What it is
+- GitHub Code Scanning ingests SARIF and shows alerts in Security → Code scanning alerts and on PRs.
+- Public repos: free. Private repos: requires GitHub Advanced Security.
+
+When to use
+- If you want policy issues visible in GitHub’s Security UI/PR checks, not just as a CI failure.
+
+How to enable with this Action
+```yaml
+name: Policy Lint
+on: [push, pull_request, workflow_dispatch]
+
+permissions:
+  contents: read
+  security-events: write  # required to upload SARIF
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Run the linter and emit SARIF
+      - uses: Amara-ops/policy-linter-action@v0.1.0
+        with:
+          policy: policies/agent/policy.json
+          report: policy.report.json
+          sarif: policy.sarif
+          artifact: policies/agent/policy.json   # repo-relative path recommended
+          strict: 'false'                        # set 'true' to block on warnings
+          version: v0.1.0
+
+      # Upload SARIF to Code Scanning
+      - uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: policy.sarif
+```
+Notes
+- artifact sets which file the alert is attached to; defaults to the policy input. Use repo-relative paths for best results.
+- If you don’t need Code Scanning, omit sarif/artifact and just use report.
 
 ## License
 MIT
