@@ -1,5 +1,7 @@
 ## Agent Treasury Policy Linter — GitHub Action
 
+[![CI](https://github.com/Amara-ops/policy-linter-action/actions/workflows/ci.yml/badge.svg)](https://github.com/Amara-ops/policy-linter-action/actions/workflows/ci.yml)
+
 One-line CI gate for agent-treasury safety. Fails your workflow if guardrails are missing:
 - selector+chainId allowlists
 - spend caps (hour/day)
@@ -23,14 +25,14 @@ jobs:
           policy: path/to/policy.json
           report: policy.report.json     # optional (default: policy.report.json)
           strict: 'true'                 # optional, treats warnings as errors
-          version: v0.1.0                # optional, linter tag/branch (defaults to main)
+          # version: v0                  # optional, linter tag/branch (defaults to v0)
 ```
 
 ## Inputs
 - policy (required): path to policy JSON
 - report (optional): path to write JSON report (default: policy.report.json)
 - strict (optional): 'true' to fail on warnings (default: 'false')
-- version (optional): linter ref in main repo (default: main)
+- version (optional): linter ref in main repo (default: v0)
 - sarif (optional): path to write SARIF output
 - artifact (optional): repo-relative path to anchor SARIF findings (defaults to policy path)
 
@@ -58,14 +60,14 @@ jobs:
       - uses: actions/checkout@v4
 
       # Run the linter and emit SARIF
-      - uses: Amara-ops/policy-linter-action@v0.1.0
+      - uses: Amara-ops/policy-linter-action@v0
         with:
           policy: policies/agent/policy.json
           report: policy.report.json
           sarif: policy.sarif
           artifact: policies/agent/policy.json   # repo-relative path recommended
           strict: 'false'                        # set 'true' to block on warnings
-          version: v0.1.0
+          # version: v0                          # optional; defaults to v0
 
       # Upload SARIF to Code Scanning
       - uses: github/codeql-action/upload-sarif@v3
