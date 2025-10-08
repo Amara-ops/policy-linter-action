@@ -29,6 +29,6 @@ jobs:
           policy: sample.policy.json
           report: report.json
           strict: 'false'
-          version: v0.1.1
+          version: v0
       - name: Assert report exists
         run: test -f report.json && cat report.json
